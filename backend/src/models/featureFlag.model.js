@@ -9,14 +9,39 @@ const featureFlagSchema = new mongoose.Schema(
             trim: true
         },
 
+        key: {
+            type: String,
+            required: true,
+            unique: true,
+            trim: true,
+            lowercase: true
+        },
+
+
         description:{
             type: String,
             default:"",
         },
 
+        type: {
+            type: String,
+            enum: ["boolean", "string", "number", "json"],
+            default: "boolean"
+        },
+
         enabled: {
              type: Boolean,
              default: false,
+        },
+
+        value: {
+            type: mongoose.Schema.Types.Mixed,
+            default: true
+        },
+
+        defaultValue: {
+            type: mongoose.Schema.Types.Mixed,
+            default: false
         },
 
         rolloutPercentage: {
