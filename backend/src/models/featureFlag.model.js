@@ -17,7 +17,7 @@ const featureFlagSchema = new mongoose.Schema(
         },
 
 
-        description:{
+        description: {
             type: String,
             default:"",
         },

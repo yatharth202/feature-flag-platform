@@ -3,6 +3,8 @@ import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
 import { evaluateFeatureFlag } from "../services/featureFlag.service.js";
+import { AuditLog } from "../models/auditLog.model.js";
+
 
 export const createFeatureFlag = asyncHandler(async(req,res) => {
     const {
@@ -44,6 +46,19 @@ export const createFeatureFlag = asyncHandler(async(req,res) => {
         defaultValue
     });
 
+    try {
+        await AuditLog.create({
+            flagId: flag._id,
+            action: "CREATE_FLAG",
+            changedBy: req.query.changedBy || "System",
+            before: null,
+            after: flag.toObject()
+        })
+        
+    }catch(err){
+        console.log("Audit log failed",err.message);
+    }
+
     return res
     .status(201)
     .json(new ApiResponse(201,flag,"Feature flag created"));
@@ -83,6 +98,7 @@ export const evaluateFlag = asyncHandler(async(req,res)=> {
         userId: userId || "anonymous",
         userAttributes
     });
+    
 
     return res
     .status(200)
@@ -98,6 +114,10 @@ export const updateTargeting = asyncHandler(async(req,res) => {
     if(!flag){
         throw new ApiError(404,"Feature flag not found");
     }
+
+    const beforeTargeting = JSON.parse(
+        JSON.stringify(flag.targeting)
+    )
     
     if (!flag.targeting){
         flag.targeting = {};
@@ -114,6 +134,19 @@ export const updateTargeting = asyncHandler(async(req,res) => {
     }
 
     await flag.save();
+
+    try {
+        await AuditLog.create({
+            flagId: flag._id,
+            action: "UPDATE_TARGETING",
+            changedBy: req.query.changedBy || "system",
+            before: beforeTargeting,
+            after: flag.targeting
+        });
+    }catch(err){
+        console.error(
+            "Audit log failed",err.message);
+    }
 
     return res.status(200).json(
         new ApiResponse(200,flag,"Targeting updated")
