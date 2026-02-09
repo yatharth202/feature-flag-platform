@@ -59,7 +59,7 @@ export const getAllFeatureFlags = asyncHandler(async(req,res) => {
 })
 
 export const evaluateFlag = asyncHandler(async(req,res)=> {
-    const {key,env,userId} = req.query;
+    const {key,env,userId,role,country} = req.query;
 
     if(!key){
         throw new ApiError(400, "Flag key is required");
@@ -71,14 +71,51 @@ export const evaluateFlag = asyncHandler(async(req,res)=> {
         throw new ApiError(400, "Invalid environment use 'dev' or 'prod'");
     }
 
+    const userAttributes = {
+        role,
+        country
+    }
+
 
     const result = await evaluateFeatureFlag({
         key,
         environment: env || "prod",
-        userId: userId || "anonymous"
+        userId: userId || "anonymous",
+        userAttributes
     });
 
     return res
     .status(200)
     .json(new ApiResponse(200,result,"flag evaluated"));
+})
+
+export const updateTargeting = asyncHandler(async(req,res) => {
+    const {id} = req.params;
+    const {explicit,rules} = req.body;
+
+    const flag =  await FeatureFlag.findById(id);
+
+    if(!flag){
+        throw new ApiError(404,"Feature flag not found");
+    }
+    
+    if (!flag.targeting){
+        flag.targeting = {};
+    }   
+
+    if(explicit){
+        flag.targeting.explicit = {
+            roles: explicit.roles || [],
+            userIds: explicit.userIds || []
+        };
+    }
+    if(rules){
+        flag.targeting.rules = rules;
+    }
+
+    await flag.save();
+
+    return res.status(200).json(
+        new ApiResponse(200,flag,"Targeting updated")
+    )
 })

@@ -5,7 +5,6 @@ const featureFlagSchema = new mongoose.Schema(
         name: {
             type: String,
             required: true,
-            unique: true,
             trim: true
         },
 
@@ -42,6 +41,36 @@ const featureFlagSchema = new mongoose.Schema(
         defaultValue: {
             type: mongoose.Schema.Types.Mixed,
             default: false
+        },
+
+        targeting: {
+            explicit:{
+                    roles:{
+                        type: [String],
+                        default: []
+                    },
+                    userIds: {
+                        type: [String],
+                        default: []
+                    }
+        },
+
+        rules:[
+            {
+            field:{
+                type: String,
+                required: true
+            },
+            operator:{
+                type: String,
+                enum: ["equals"],
+                default: "equals"
+            },
+            value:{
+                type: String
+            }
+            }
+        ]
         },
 
         rolloutPercentage: {
