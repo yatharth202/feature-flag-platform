@@ -2,7 +2,7 @@ import { FeatureFlag } from "../models/featureFlag.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { evaluateFeatureFlag } from "../services/featureFlag.service.js";
+import { evaluateFeatureFlag,getFeatureFlagVersions } from "../services/featureFlag.service.js";
 import { AuditLog } from "../models/auditLog.model.js";
 
 
@@ -150,5 +150,20 @@ export const updateTargeting = asyncHandler(async(req,res) => {
 
     return res.status(200).json(
         new ApiResponse(200,flag,"Targeting updated")
+    )
+})
+
+
+export const getFeatureFlagVersionsController = asyncHandler(async(req,res) => {
+    const {id} = req.params;
+    const {page=1,limit=10} =req.query;
+
+    const version = await getFeatureFlagVersions(id,{
+        page: Number(page),
+        limit: Number(limit),
+    })
+
+    return res.status(200).json(
+        new ApiResponse(200,version,"Feature flag verion fetched successfully")
     )
 })

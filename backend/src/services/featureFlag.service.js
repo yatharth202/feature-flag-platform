@@ -1,6 +1,8 @@
 import { FeatureFlag } from "../models/featureFlag.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { getUserRolloutBucket } from "../utils/hash.util.js";
+import { AuditLog } from "../models/auditLog.model.js";
+import { version } from "mongoose";
 
 
 export const evaluateFeatureFlag = async({key,environment,userId,userAttributes ={}}) => {
@@ -82,4 +84,28 @@ export const evaluateFeatureFlag = async({key,environment,userId,userAttributes 
         value: flag.value,
         reason: "ROLLOUT_MATCH"
     }
+}
+
+export const getFeatureFlagVersions = async(flagId,{page=1,limit=10}) => {
+    const flag = await FeatureFlag.findById(flagId)
+
+    if(!flag){
+        throw new ApiError(404,"Feature flag not found")
+    }
+
+    const skip = (page-1)*limit
+
+    const auditLog = await AuditLog.find({flagId})
+        .sort({createdAt: -1})
+        .skip(skip)
+        .limit(limit)
+        .lean()
+
+    return auditLog.map(log =>({
+        versionId: log._id,
+        action: log.action,
+        changedBy: log.changedBy,
+        createdAt: log.createdAt,
+        snapshot: log.after
+    }));
 }
