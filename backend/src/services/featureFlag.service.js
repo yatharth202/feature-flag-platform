@@ -109,3 +109,53 @@ export const getFeatureFlagVersions = async(flagId,{page=1,limit=10}) => {
         snapshot: log.after
     }));
 }
+
+export const rollbackFeatureFlag = async(flagId,versionId,changedBy = "system") => {
+    const flag = await FeatureFlag.findById(flagId)
+
+    if(!flag){
+        throw new ApiError(404,"Feature flag not found")
+    }
+
+    const versionLog = await AuditLog.findById(versionId)
+    if(!versionLog){
+        throw new ApiError(404,"Version not found")
+    }
+
+    if (versionLog.flagId.toString()!==flagId.toString()){
+        throw new ApiError(400, "Version does not belong to this feature flag");
+    }
+    
+    //current state
+    const beforeState = flag.toObject();
+
+    //change wali state
+    const snapshot = versionLog.after;
+
+    flag.name = snapshot.name;
+    flag.key = snapshot.key;
+    flag.description = snapshot.description;
+    flag.type = snapshot.type;
+    flag.enabled = snapshot.enabled;
+    flag.value = snapshot.value;
+    flag.defaultValue = snapshot.defaultValue;
+    flag.targeting = snapshot.targeting;
+    flag.rolloutPercentage = snapshot.rolloutPercentage;
+    flag.environment = snapshot.environment;
+
+    await flag.save();
+
+    try{
+        await AuditLog.create({
+            flagId: flagId,
+            action: "ROLLBACK",
+            changedBy,
+            before: beforeState,
+            after: flag.toObject()
+        })
+    } catch(err){
+        console.error("Audit log failed!!", err.message)
+    }
+
+    return flag;
+}

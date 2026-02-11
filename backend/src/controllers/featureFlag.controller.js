@@ -2,7 +2,7 @@ import { FeatureFlag } from "../models/featureFlag.model.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { ApiError } from "../utils/ApiError.js";
-import { evaluateFeatureFlag,getFeatureFlagVersions } from "../services/featureFlag.service.js";
+import { evaluateFeatureFlag,getFeatureFlagVersions,rollbackFeatureFlag } from "../services/featureFlag.service.js";
 import { AuditLog } from "../models/auditLog.model.js";
 
 
@@ -166,4 +166,24 @@ export const getFeatureFlagVersionsController = asyncHandler(async(req,res) => {
     return res.status(200).json(
         new ApiResponse(200,version,"Feature flag verion fetched successfully")
     )
+})
+
+export const rollbackFeatureFlagController = asyncHandler(async(req,res)=> {
+    const {id} =req.params;
+    const {versionId} =req.body;
+
+    if(!versionId){
+        throw new ApiError(400,"VersionId is required");
+    }
+
+    const updateFlag = await rollbackFeatureFlag(
+        id,
+        versionId,
+        req.query.changedBy || "system"
+    );
+
+    return res.status(200).json(
+        new ApiResponse(200,updateFlag,"Feature flag rolled back successfully")
+    )
+
 })

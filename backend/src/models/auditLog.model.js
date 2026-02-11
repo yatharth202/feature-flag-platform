@@ -10,7 +10,7 @@ const auditLogSchema = new mongoose.Schema(
 
         action: {
             type: String,
-            enum: ["CREATE_FLAG","UPDATE_TARGETING"],
+            enum: ["CREATE_FLAG","UPDATE_TARGETING","ROLLBACK"],
             required: true
         },
 
